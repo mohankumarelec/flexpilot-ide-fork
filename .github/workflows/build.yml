@@ -38,7 +38,7 @@ jobs:
           docker commit alpine-prep alpine-prepared
           docker rm alpine-prep
 
-          docker run --rm --privileged --user root \
+          docker run --rm --user root \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /var/lib/docker:/var/lib/docker \
             -v ${{ github.workspace }}:/workspace \
