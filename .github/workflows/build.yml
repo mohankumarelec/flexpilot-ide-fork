@@ -45,9 +45,9 @@ jobs:
             sh -c "
             ls -ltrha && \
             pwd && \
-            apk add git && \
+            sudo apk add git && \
             git config pull.rebase merges && \
-            apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev libx11-dev libxkbfile-dev && \
+            sudo apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev libx11-dev libxkbfile-dev && \
             npm install && \
             npm run gulp ${{ matrix.reh_gulp_task }}"
 
