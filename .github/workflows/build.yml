@@ -44,6 +44,7 @@ jobs:
             ${{ matrix.docker_image }} \
             sh -c "
             pwd && \
+            apk add git && \
             git config pull.rebase merges && \
             apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev libx11-dev libxkbfile-dev && \
             npm install && \
