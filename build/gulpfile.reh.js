@@ -157,6 +157,13 @@ function extractAlpinefromDocker(nodeVersion, platform, arch) {
 	return es.readArray([new File({ path: 'node', contents, stat: { mode: parseInt('755', 8) } })]);
 }
 
+function extractNodefromAlpine(nodeVersion, platform, arch) {
+	const nodePath = execSync('which node', { encoding: 'utf-8' }).trim();
+	if (!fs.existsSync(nodePath)) { throw new Error('Node.js binary not found'); }
+	const contents = fs.readFileSync(nodePath);
+	return es.readArray([new File({ path: 'node', contents, stat: { mode: parseInt('755', 8) } })]);
+}
+
 const { nodeVersion, internalNodeVersion } = getNodeVersion();
 
 BUILD_TARGETS.forEach(({ platform, arch }) => {
@@ -241,7 +248,7 @@ function nodejs(platform, arch) {
 					.pipe(filter('**/node'))
 					.pipe(util.setExecutableBit('**'))
 					.pipe(rename('node'))
-				: extractAlpinefromDocker(nodeVersion, platform, arch);
+				: extractNodefromAlpine(nodeVersion, platform, arch);
 	}
 }
 
