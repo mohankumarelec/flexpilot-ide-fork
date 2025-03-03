@@ -32,16 +32,6 @@ jobs:
         with:
           path: 'repository'
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
       - name: Install Linux Build Dependencies
         run: apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev
 
