@@ -33,7 +33,7 @@ jobs:
           path: 'repository'
 
       - name: Install Linux Build Dependencies
-        run: apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev
+        run: apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev libx11-dev libxkbfile-dev
 
       - name: Install Project Dependencies
         working-directory: ./repository
