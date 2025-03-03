@@ -18,12 +18,12 @@ jobs:
         include:
           - runner: ubuntu-24.04-arm
             arch: arm64
-            docker_image: alpine:latest
+            docker_image: arm64v8/alpine:latest
             reh_gulp_task: vscode-reh-linux-arm64
             reh_filename: server-alpine-arm64.tar.gz
           - runner: ubuntu-24.04
             arch: x64
-            docker_image: arm64v8/alpine:latest
+            docker_image: alpine:latest
             reh_gulp_task: vscode-reh-linux-alpine
             reh_filename: server-linux-alpine.tar.gz
     steps:
