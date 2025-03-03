@@ -42,7 +42,7 @@ jobs:
           docker run --rm --privileged \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /var/lib/docker:/var/lib/docker \
-            -v ${{ github.workspace }}:/workspace \
+            --mount type=volume,src=${{ github.workspace }},dst=/workspace,volume-opt=o=uid=0,gid=0,mode=0777 \
             -w /workspace/repository \
             -e GITHUB_TOKEN=$GITHUB_TOKEN \
             -e VSCODE_QUALITY=stable \
@@ -51,7 +51,6 @@ jobs:
             sh -c "
             ls -ltrha && \
             pwd && \
-            chmod -R 777 /workspace && \
             git config pull.rebase merges && \
             npm install && \
             npm run gulp ${{ matrix.reh_gulp_task }}"
