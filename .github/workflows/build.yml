@@ -33,12 +33,8 @@ jobs:
 
       - name: Install Linux Build Dependencies
         run: |
-          docker run --rm --privileged \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v /var/lib/docker:/var/lib/docker \
+          docker run --rm -w /workspace/repository \
             -v ${{ github.workspace }}:/workspace \
-            -w /workspace/repository \
-            -e GITHUB_TOKEN=$GITHUB_TOKEN \
             -e VSCODE_QUALITY=stable \
             -e BUILD_SOURCEVERSION=cd4ee3b1c348a13bafd8f9ad8060705f6d4b9cba \
             ${{ matrix.docker_image }} \
