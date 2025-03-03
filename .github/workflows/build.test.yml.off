@@ -11,7 +11,7 @@ jobs:
     name: "Build for Alpine Linux CLI"
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    container: ${{ matrix.docker_image }}
+    container:
     strategy:
       fail-fast: false
       matrix:
@@ -32,6 +32,56 @@ jobs:
         with:
           path: 'repository'
 
+      - name: Set fixed version
+        id: set_version
+        run: echo "version=1.96.4" >> $GITHUB_OUTPUT
+
+      - name: Check if release exists
+        id: check_release
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              const release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: 'v${{ steps.set_version.outputs.version }}'
+              });
+
+              if (release.data) {
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: release.data.id
+                });
+
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: 'tags/v${{ steps.set_version.outputs.version }}'
+                });
+              }
+              return true;
+            } catch (e) {
+              return false;
+            }
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.set_version.outputs.version }}
+          release_name: Release v${{ steps.set_version.outputs.version }}
+          body: |
+            Automated release created from push to ${{ github.ref_name }} branch.
+            Commit: ${{ github.sha }}
+            Created at: ${{ github.event.repository.updated_at }}
+          draft: false
+          prerelease: false
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
@@ -43,7 +93,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install Linux Build Dependencies
-        run: apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev
+        run: sudo apt-get install build-essential g++ libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev python-is-python3 fakeroot rpm
 
       - name: Install Project Dependencies
         working-directory: ./repository
@@ -57,13 +107,17 @@ jobs:
         run: npm run gulp ${{ matrix.reh_gulp_task }}
 
       - name: Build Flexpilot Executables
-        run: tar -czvf ${{ matrix.reh_filename }} ${{ matrix.reh_gulp_task }}/
+        run: tar -czvf archive.tar.gz ${{ matrix.reh_gulp_task }}/
 
-      - name: Upload RPM Package Artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
         with:
-          name: ${{ matrix.reh_filename }}
-          path: ${{ matrix.reh_filename }}
+          files: |
+            ${{ github.workspace }}/repository/.build/linux/deb/${{ matrix.arch == 'x64' && 'amd64' || 'arm64' }}/deb/linux-${{ matrix.arch }}.deb
+            ${{ github.workspace }}/repository/.build/linux/rpm/${{ matrix.arch == 'x64' && 'x86_64' || 'aarch64' }}/linux-${{ matrix.arch }}.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
   # linux_build:
   #   runs-on: ${{ matrix.runner }}

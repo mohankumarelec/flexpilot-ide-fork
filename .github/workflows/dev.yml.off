@@ -1,0 +1,33 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - main  # Change this to your target branch name if not main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: get_version
+        run: echo "version=$(date +'%Y.%m.%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: Release v${{ steps.get_version.outputs.version }}
+          body: |
+            Automated release created from push to ${{ github.ref_name }} branch.
+            Commit: ${{ github.sha }}
+          draft: false
+          prerelease: false
