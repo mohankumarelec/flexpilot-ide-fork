@@ -175,10 +175,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - reh_gulp_task: vscode-reh-win32-arm64
-            reh_filename: server-win32-arm64.tar.gz
           - reh_gulp_task: vscode-reh-win32-x64
-            reh_filename: server-win32-x64.tar.gz
+            reh_filename: server-win32-x64.zip
+          - reh_gulp_task: vscode-reh-win32-arm64
+            reh_filename: server-win32-arm64.zip
     steps:
       - name: Checkout Code Repository
         uses: actions/checkout@v4
@@ -207,7 +207,8 @@ jobs:
         run: npm run gulp ${{ matrix.reh_gulp_task }}
 
       - name: Build Flexpilot Executables
-        run: tar -czvf ${{ matrix.reh_filename }} ${{ matrix.reh_gulp_task }}/
+        shell: pwsh
+        run: Compress-Archive -Path ${{ matrix.reh_gulp_task }} -DestinationPath ${{ matrix.reh_filename }}
 
       - name: Upload RPM Package Artifact
         uses: actions/upload-artifact@v4
