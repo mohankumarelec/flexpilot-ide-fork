@@ -33,6 +33,11 @@ jobs:
 
       - name: Install Linux Build Dependencies
         run: |
+          docker run --name alpine-prep ${{ matrix.docker_image }} apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev libx11-dev libxkbfile-dev
+
+          docker commit alpine-prep alpine-prepared
+          docker rm alpine-prep
+
           docker run --rm --privileged \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /var/lib/docker:/var/lib/docker \
@@ -41,14 +46,11 @@ jobs:
             -e GITHUB_TOKEN=$GITHUB_TOKEN \
             -e VSCODE_QUALITY=stable \
             -e BUILD_SOURCEVERSION=cd4ee3b1c348a13bafd8f9ad8060705f6d4b9cba \
-            ${{ matrix.docker_image }} \
+            alpine-prep \
             sh -c "
             ls -ltrha && \
             pwd && \
-            chown -R $(id -u):$(id -g) /workspace/repository && \
-            apk add git && \
             git config pull.rebase merges && \
-            apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev libx11-dev libxkbfile-dev && \
             npm install && \
             npm run gulp ${{ matrix.reh_gulp_task }}"
 
