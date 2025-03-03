@@ -42,10 +42,11 @@ jobs:
               chown -R root:root /workspace && \
               apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev libx11-dev libxkbfile-dev && \
               npm install && \
-              npm run gulp ${{ matrix.reh_gulp_task }} && \
-              chmod -R 777 /workspace
+              npm run gulp ${{ matrix.reh_gulp_task }}
             "
 
+      - name: Set Permissions
+        run: sudo chown -R $USER:$USER .
 
       - name: Build Flexpilot Executables
         run: tar -czvf ${{ matrix.reh_filename }} ${{ matrix.reh_gulp_task }}/

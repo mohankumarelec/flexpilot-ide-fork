@@ -44,10 +44,8 @@ impl Quality {
 			.as_ref()
 			.and_then(|m| m.get(self))
 			.map(|s| s.server_application_name.as_str())
-			.unwrap_or("code-server-oss")
+			.unwrap_or("flexpilot-server")
 			.to_string();
-
-		server_name = "code-server-oss".to_string();
 
 		if cfg!(windows) {
 			server_name.push_str(".cmd");
