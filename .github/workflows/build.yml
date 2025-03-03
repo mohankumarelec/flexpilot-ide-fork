@@ -33,6 +33,7 @@ jobs:
 
       - name: Install Linux Build Dependencies
         run: |
+          sudo chmod -R 777 ${{ github.workspace }}
           docker run --name alpine-prep ${{ matrix.docker_image }} apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev libx11-dev libxkbfile-dev
 
           docker commit alpine-prep alpine-prepared
