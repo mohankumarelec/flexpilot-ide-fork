@@ -33,7 +33,7 @@ jobs:
 
       - name: Install Linux Build Dependencies
         run: |
-          docker run --rm --privileged --user "$(id -u):$(id -g)" \
+          docker run --rm --privileged \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /var/lib/docker:/var/lib/docker \
             -v ${{ github.workspace }}:/workspace \
@@ -45,9 +45,10 @@ jobs:
             sh -c "
             ls -ltrha && \
             pwd && \
-            sudo apk add git && \
+            chown -R $(id -u):$(id -g) /workspace/repository && \
+            apk add git && \
             git config pull.rebase merges && \
-            sudo apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev libx11-dev libxkbfile-dev && \
+            apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev libx11-dev libxkbfile-dev && \
             npm install && \
             npm run gulp ${{ matrix.reh_gulp_task }}"
 
