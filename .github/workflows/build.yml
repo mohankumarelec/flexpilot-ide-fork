@@ -51,7 +51,7 @@ jobs:
             sh -c "
             ls -ltrha && \
             pwd && \
-            sudo chmod -R 777 /workspace && \
+            chmod -R 777 /workspace && \
             git config pull.rebase merges && \
             npm install && \
             npm run gulp ${{ matrix.reh_gulp_task }}"
