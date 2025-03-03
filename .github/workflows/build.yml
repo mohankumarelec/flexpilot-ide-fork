@@ -39,8 +39,8 @@ jobs:
             -v ${{ github.workspace }}:/workspace \
             -w /workspace/repository \
             -e GITHUB_TOKEN=$GITHUB_TOKEN \
-            -e VSCODE_QUALITY: stable \
-            -e BUILD_SOURCEVERSION: cd4ee3b1c348a13bafd8f9ad8060705f6d4b9cba \
+            -e VSCODE_QUALITY=stable \
+            -e BUILD_SOURCEVERSION=cd4ee3b1c348a13bafd8f9ad8060705f6d4b9cba \
             ${{ matrix.docker_image }} \
             apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev libx11-dev libxkbfile-dev && \
             npm install && \
