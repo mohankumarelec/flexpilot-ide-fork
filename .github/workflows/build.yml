@@ -39,7 +39,7 @@ jobs:
             sh -c "
               chown -R root:root /workspace && \
               apk add nodejs npm g++ python3 make git bash curl perl pkgconfig libsecret-dev krb5-dev libx11-dev libxkbfile-dev && \
-              npm install && \
+              n=0; until npm install || ((n++ >= 2)); do echo "Retrying..."; sleep 2; done && \
               npm run gulp ${{ matrix.reh_gulp_task }}
             "
 
@@ -97,7 +97,7 @@ jobs:
 
       - name: Install Project Dependencies
         working-directory: ./repository
-        run: npm install
+        run: n=0; until npm install || ((n++ >= 2)); do echo "Retrying..."; sleep 2; done
 
       - name: Build Flexpilot Executables
         working-directory: ./repository
