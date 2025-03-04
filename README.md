@@ -1,5 +1,43 @@
 # Flexpilot IDE - Open-Source AI Native IDE
 
+
+
+
+
+
+```
+export CC_aarch64_unknown_linux_musl=aarch64-linux-musl-gcc
+export CXX_aarch64_unknown_linux_musl=aarch64-linux-musl-g++
+export AR_aarch64_unknown_linux_musl=aarch64-linux-musl-ar
+export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc
+```
+
+```
+rustup target add aarch64-unknown-linux-musl
+cargo build --release --target aarch64-unknown-linux-musl
+
+cargo build --target aarch64-unknown-linux-musl
+
+export VSCODE_QUALITY=stable
+export BUILD_SOURCEVERSION=cd4ee3b1c348a13bafd8f9ad8060705f6d4b9cba
+npm run gulp vscode-reh-linux-arm64
+
+./kill-code-server.sh
+mkdir -p ~/.vscode-server-oss/cli/servers/Stable-cd4ee3b1c348a13bafd8f9ad8060705f6d4b9cba/server
+cp -r ~/vscode-reh-linux-arm64/* ~/.vscode-server-oss/cli/servers/Stable-cd4ee3b1c348a13bafd8f9ad8060705f6d4b9cba/server/
+```
+
+
+
+
+
+
+
+
+
+
+
+
 > _"An open-source, free, AI-native, privacy-first IDE, forked from VS Code, offering the flexibility to bring your own keys for the LLMs of your choice."_
 
 ![Build](https://github.com/flexpilot-ai/flexpilot-ide/actions/workflows/build.yml/badge.svg)

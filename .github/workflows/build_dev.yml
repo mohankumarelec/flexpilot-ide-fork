@@ -7,6 +7,8 @@ permissions:
 
 env:
   VSCODE_QUALITY: stable
+  CXXFLAGS: -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++11
+  LDFLAGS: -static-libstdc++ -static-libgcc
 
 jobs:
   alpine_linux_server_build:

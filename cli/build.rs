@@ -20,7 +20,7 @@ fn main() {
 	println!("cargo:rustc-env=VSCODE_CLI_VERSION=1.96.4");
 	println!("cargo:rustc-env=VSCODE_CLI_QUALITY=stable");
 	println!("cargo:rustc-env=VSCODE_CLI_COMMIT=cd4ee3b1c348a13bafd8f9ad8060705f6d4b9cba");
-	println!("cargo:rustc-env=VSCODE_CLI_UPDATE_ENDPOINT=https://update.code.visualstudio.com");
+	println!("cargo:rustc-env=VSCODE_CLI_UPDATE_ENDPOINT=https://update.flexpilot.ai");
 	println!("cargo:rustc-env=VSCODE_CLI_APPLICATION_NAME=flexpilot");
 	println!("cargo:rustc-env=VSCODE_CLI_NAME_LONG=Flexpilot");
 	println!("cargo:rustc-env=VSCODE_CLI_QUALITYLESS_PRODUCT_NAME=Flexpilot");
