@@ -7,6 +7,9 @@ on:
 permissions:
   contents: write
 
+env:
+  VSCODE_QUALITY: stable
+
 jobs:
   alpine_linux_server_build:
     runs-on: ${{ matrix.runner }}
@@ -31,12 +34,16 @@ jobs:
         with:
           path: 'repository'
 
+      - name: Extract commit from product.json
+        id: get_commit
+        run: echo "BUILD_SOURCEVERSION=$(jq -r '.commit' repository/product.json)" >> $GITHUB_ENV
+
       - name: Install Linux Build Dependencies
         run: |
           docker run --rm -w /workspace/repository \
             -v ${{ github.workspace }}:/workspace \
-            -e VSCODE_QUALITY=stable \
-            -e BUILD_SOURCEVERSION=cd4ee3b1c348a13bafd8f9ad8060705f6d4b9cba \
+            -e VSCODE_QUALITY=$VSOCDE_QUALITY \
+            -e BUILD_SOURCEVERSION=$BUILD_SOURCEVERSION \
             ${{ matrix.docker_image }} \
             sh -c "
               chown -R root:root /workspace && \
@@ -88,6 +95,10 @@ jobs:
         with:
           path: 'repository'
 
+      - name: Extract commit from product.json
+        id: get_commit
+        run: echo "BUILD_SOURCEVERSION=$(jq -r '.commit' repository/product.json)" >> $GITHUB_ENV
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
@@ -110,9 +121,6 @@ jobs:
 
       - name: Build Flexpilot Executables
         working-directory: ./repository
-        env:
-          VSCODE_QUALITY: stable
-          BUILD_SOURCEVERSION: cd4ee3b1c348a13bafd8f9ad8060705f6d4b9cba
         run: npm run gulp ${{ matrix.reh_gulp_task }}
 
       - name: Build Flexpilot Executables
@@ -152,6 +160,10 @@ jobs:
         with:
           path: 'repository'
 
+      - name: Extract commit from product.json
+        id: get_commit
+        run: echo "BUILD_SOURCEVERSION=$(jq -r '.commit' repository/product.json)" >> $GITHUB_ENV
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
@@ -168,9 +180,6 @@ jobs:
 
       - name: Build Flexpilot Executables
         working-directory: ./repository
-        env:
-          VSCODE_QUALITY: stable
-          BUILD_SOURCEVERSION: cd4ee3b1c348a13bafd8f9ad8060705f6d4b9cba
         run: npm run gulp ${{ matrix.reh_gulp_task }}
 
       - name: Build Flexpilot Executables
@@ -208,6 +217,11 @@ jobs:
         with:
           path: 'repository'
 
+      - name: Extract commit from product.json
+        id: get_commit
+        shell: bash
+        run: echo "BUILD_SOURCEVERSION=$(jq -r '.commit' repository/product.json)" >> $GITHUB_ENV
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
@@ -224,9 +238,6 @@ jobs:
 
       - name: Build Executables
         working-directory: ./repository
-        env:
-          VSCODE_QUALITY: stable
-          BUILD_SOURCEVERSION: cd4ee3b1c348a13bafd8f9ad8060705f6d4b9cba
         run: npm run gulp ${{ matrix.reh_gulp_task }}
 
       - name: Build Flexpilot Executables
@@ -245,6 +256,3 @@ jobs:
           files: ${{ matrix.reh_filename }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-
