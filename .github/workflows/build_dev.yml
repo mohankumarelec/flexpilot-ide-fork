@@ -105,7 +105,7 @@ jobs:
               apt-get update && \
               apt-get install -y curl && \
               curl -sL https://deb.nodesource.com/setup_20.x | bash && \
-              apt-get install -y nodejs npm && \
+              apt-get install -y nodejs && \
               apt-get install -y build-essential g++ libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev python-is-python3 python3.12 fakeroot rpm && \
               npm install && \
               npm run gulp ${{ matrix.reh_gulp_task }}
