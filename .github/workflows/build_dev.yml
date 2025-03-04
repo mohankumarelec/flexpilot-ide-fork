@@ -7,7 +7,6 @@ permissions:
 
 env:
   VSCODE_QUALITY: stable
-  LDFLAGS: -static-libstdc++
 
 jobs:
   alpine_linux_server_build:
@@ -75,12 +74,15 @@ jobs:
           - runner: ubuntu-24.04-arm
             reh_gulp_task: vscode-reh-linux-arm64
             reh_filename: server-linux-arm64.tar.gz
+            docker_image: arm64v8/ubuntu:20.04
           - runner: ubuntu-24.04
             reh_gulp_task: vscode-reh-linux-x64
             reh_filename: server-linux-x64.tar.gz
+            docker_image: ubuntu:20.04
           - runner: ubuntu-24.04
             reh_gulp_task: vscode-reh-linux-armhf
             reh_filename: server-linux-armhf.tar.gz
+            docker_image: arm32v7/ubuntu:20.04
     steps:
       - name: Checkout Code Repository
         uses: actions/checkout@v4
@@ -91,29 +93,25 @@ jobs:
         id: get_commit
         run: echo "BUILD_SOURCEVERSION=$(jq -r '.commit' repository/product.json)" >> $GITHUB_ENV
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Update Package Cache for Ubuntu
-        run: sudo apt-get update
-
       - name: Install Linux Build Dependencies
-        run: sudo apt-get install build-essential g++ libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev python-is-python3 fakeroot rpm
+        run: |
+          docker run --rm -w /workspace/repository \
+            -v ${{ github.workspace }}:/workspace \
+            -e VSCODE_QUALITY=$VSOCDE_QUALITY \
+            -e BUILD_SOURCEVERSION=$BUILD_SOURCEVERSION \
+            ${{ matrix.docker_image }} \
+            sh -c "
+              chown -R root:root /workspace && \
+              apt-get update && \
+              apt-get install curl build-essential g++ libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev python-is-python3 python3.12 fakeroot rpm && \
+              curl -sL https://deb.nodesource.com/setup_20.x | bash && \
+              apt-get install -y nodejs && \
+              n=0; until npm install || ((n++ >= 2)); do echo "Retrying..."; sleep 2; done && \
+              npm run gulp ${{ matrix.reh_gulp_task }}
+            "
 
-      - name: Install Project Dependencies
-        working-directory: ./repository
-        run: n=0; until npm install || ((n++ >= 2)); do echo "Retrying..."; sleep 2; done
-
-      - name: Build Flexpilot Executables
-        working-directory: ./repository
-        run: npm run gulp ${{ matrix.reh_gulp_task }}
+      - name: Set Permissions
+        run: sudo chown -R $USER:$USER .
 
       - name: Build Flexpilot Executables
         run: tar -czvf ${{ matrix.reh_filename }} ${{ matrix.reh_gulp_task }}/
