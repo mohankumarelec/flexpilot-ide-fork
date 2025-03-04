@@ -34,7 +34,7 @@ jobs:
 
       - name: Extract commit from product.json
         id: get_commit
-        run: echo "BUILD_SOURCEVERSION=$(jq -r '.commit' product.json)" >> $GITHUB_ENV
+        run: echo "BUILD_SOURCEVERSION=$(jq -r '.commit' repository/product.json)" >> $GITHUB_ENV
 
       - name: List Environment Variables
         run: env
@@ -89,6 +89,13 @@ jobs:
         with:
           path: 'repository'
 
+      - name: Extract commit from product.json
+        id: get_commit
+        run: echo "BUILD_SOURCEVERSION=$(jq -r '.commit' repository/product.json)" >> $GITHUB_ENV
+
+      - name: List Environment Variables
+        run: env
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
@@ -111,9 +118,6 @@ jobs:
 
       - name: Build Flexpilot Executables
         working-directory: ./repository
-        env:
-          VSCODE_QUALITY: stable
-          BUILD_SOURCEVERSION: cd4ee3b1c348a13bafd8f9ad8060705f6d4b9cba
         run: npm run gulp ${{ matrix.reh_gulp_task }}
 
       - name: Build Flexpilot Executables
@@ -145,6 +149,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: 'repository'
+
+      - name: Extract commit from product.json
+        id: get_commit
+        run: echo "BUILD_SOURCEVERSION=$(jq -r '.commit' repository/product.json)" >> $GITHUB_ENV
+
+      - name: List Environment Variables
+        run: env
 
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -194,6 +205,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: 'repository'
+
+      - name: Extract commit from product.json
+        id: get_commit
+        shell: bash
+        run: echo "BUILD_SOURCEVERSION=$(jq -r '.commit' repository/product.json)" >> $GITHUB_ENV
 
       - name: Install Node.js
         uses: actions/setup-node@v4
