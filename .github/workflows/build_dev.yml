@@ -73,15 +73,15 @@ jobs:
           - runner: ubuntu-24.04-arm
             reh_gulp_task: vscode-reh-linux-arm64
             reh_filename: server-linux-arm64.tar.gz
-            docker_image: arm64v8/ubuntu:20.04
+            docker_image: arm64v8/ubuntu:14.04
           - runner: ubuntu-24.04
             reh_gulp_task: vscode-reh-linux-x64
             reh_filename: server-linux-x64.tar.gz
-            docker_image: ubuntu:20.04
+            docker_image: ubuntu:14.04
           - runner: ubuntu-24.04-arm
             reh_gulp_task: vscode-reh-linux-armhf
             reh_filename: server-linux-armhf.tar.gz
-            docker_image: arm32v7/ubuntu:20.04
+            docker_image: arm32v7/ubuntu:14.04
     steps:
       - name: Checkout Code Repository
         uses: actions/checkout@v4
