@@ -1,6 +1,8 @@
 name: Product Build Workflow
 
-on: [push, pull_request]
+on:
+  release:
+    types: [created]
 
 permissions:
   contents: write
@@ -54,6 +56,13 @@ jobs:
         with:
           name: ${{ matrix.reh_filename }}
           path: ${{ matrix.reh_filename }}
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.reh_filename }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   ubuntu_linux_server_build:
     runs-on: ${{ matrix.runner }}
@@ -115,6 +124,13 @@ jobs:
           name: ${{ matrix.reh_filename }}
           path: ${{ matrix.reh_filename }}
 
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.reh_filename }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   darwin_server_build:
     runs-on: ${{ matrix.runner }}
     name: "Build for Darwin Server"
@@ -166,6 +182,13 @@ jobs:
           name: ${{ matrix.reh_filename }}
           path: ${{ matrix.reh_filename }}
 
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.reh_filename }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   windows_server_build:
     runs-on: windows-latest
     name: "Build for Windows Server"
@@ -215,6 +238,13 @@ jobs:
         with:
           name: ${{ matrix.reh_filename }}
           path: ${{ matrix.reh_filename }}
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.reh_filename }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
 
