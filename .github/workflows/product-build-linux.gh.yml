@@ -1,0 +1,188 @@
+name: Linux Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - VSCODE_ARCH: arm64
+            NPM_ARCH: arm64
+            VSCODE_QUALITY: stable
+          - VSCODE_ARCH: armhf
+            NPM_ARCH: arm
+            VSCODE_QUALITY: stable
+          - VSCODE_ARCH: x64
+            NPM_ARCH: x64
+            VSCODE_QUALITY: stable
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: 'repository'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Setup system services
+        working-directory: repository
+        run: ./build/azure-pipelines/linux/apt-retry.sh sudo apt-get update
+
+      - name: Setup system services
+        working-directory: repository
+        run: ./build/azure-pipelines/linux/apt-retry.sh sudo apt-get install -y pkg-config \
+            dbus \
+            xvfb \
+            libgtk-3-0 \
+            libxkbfile-dev \
+            libkrb5-dev \
+            libgbm1 \
+            rpm
+
+      - name: Install build dependencies
+        working-directory: repository/build
+        run: |
+          for i in {1..5}; do # try 5 times
+            npm ci && break
+            if [ $i -eq 5 ]; then
+              echo "Npm install failed too many times" >&2
+              exit 1
+            fi
+            echo "Npm install failed $i, trying again..."
+          done
+
+      - name: Download vscode sysroots
+        working-directory: repository
+        env:
+          VSCODE_ARCH: ${{ matrix.VSCODE_ARCH}}
+        run: |
+          SYSROOT_ARCH=$VSCODE_ARCH
+          if [ "$SYSROOT_ARCH" == "x64" ]; then
+            SYSROOT_ARCH="amd64"
+          fi
+          export VSCODE_SYSROOT_DIR=$(pwd)/.build/sysroots
+          mkdir -p $VSCODE_SYSROOT_DIR
+          SYSROOT_ARCH="$SYSROOT_ARCH" node -e '(async () => { const { getVSCodeSysroot } = require("./build/linux/debian/install-sysroot.js"); await getVSCodeSysroot(process.env["SYSROOT_ARCH"]); })()'
+
+      - name: Override gnu target for arm64 and arm
+        if: ${{ matrix.VSCODE_ARCH == 'arm64' || matrix.VSCODE_ARCH == 'armhf' }}
+        working-directory: repository
+        run: |
+          includes=$(cat << 'EOF'
+          {
+            "target_defaults": {
+              "conditions": [
+                ["OS=='linux'", {
+                  'cflags_cc!': [ '-std=gnu++20' ],
+                  'cflags_cc': [ '-std=gnu++2a' ],
+                }]
+              ]
+            }
+          }
+          EOF
+          )
+          if [ ! -d "$HOME/.gyp" ]; then
+            mkdir -p "$HOME/.gyp"
+          fi
+          echo "$includes" > "$HOME/.gyp/include.gypi"
+
+      - name: Install dependencies
+        working-directory: repository
+        run: |
+          source ./build/azure-pipelines/linux/setup-env.sh
+
+          for i in {1..5}; do # try 5 times
+            npm ci && break
+            if [ $i -eq 5 ]; then
+              echo "Npm install failed too many times" >&2
+              exit 1
+            fi
+            echo "Npm install failed $i, trying again..."
+          done
+        env:
+          npm_config_arch: ${{ matrix.NPM_ARCH }}
+          VSCODE_ARCH: ${{ matrix.VSCODE_ARCH }}
+          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Build server
+        id: build_server
+        working-directory: repository
+        run: |
+          set -e
+          npm run gulp vscode-reh-linux-${{ matrix.VSCODE_ARCH }}-min
+          mv ../vscode-reh-linux-${{ matrix.VSCODE_ARCH }} ../vscode-server-linux-${{ matrix.VSCODE_ARCH }}
+          ARCHIVE_PATH=".build/linux/server/vscode-server-linux-${{ matrix.VSCODE_ARCH }}.tar.gz"
+          UNARCHIVE_PATH="$(pwd)/../vscode-server-linux-${{ matrix.VSCODE_ARCH }}"
+          mkdir -p $(dirname $ARCHIVE_PATH)
+          tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-${{ matrix.VSCODE_ARCH }}
+          echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+          echo "UNARCHIVE_PATH=$UNARCHIVE_PATH" >> $GITHUB_OUTPUT
+
+      - name: Check GLIBC and GLIBCXX dependencies in server archive (x64/arm64)
+        if: ${{ matrix.VSCODE_ARCH == 'x64' || matrix.VSCODE_ARCH == 'arm64' }}
+        run: ./build/azure-pipelines/linux/verify-glibc-requirements.sh
+        env:
+          SEARCH_PATH: ${{ steps.build_server.outputs.UNARCHIVE_PATH }}
+          EXPECTED_GLIBC_VERSION: 2.28
+          EXPECTED_GLIBCXX_VERSION: 3.4.25
+
+      - name: Check GLIBC and GLIBCXX dependencies in server archive (other)
+        if: ${{ matrix.VSCODE_ARCH != 'x64' && matrix.VSCODE_ARCH != 'arm64' }}
+        run: ./build/azure-pipelines/linux/verify-glibc-requirements.sh
+        env:
+          SEARCH_PATH: ${{ steps.build_server.outputs.UNARCHIVE_PATH }}
+          EXPECTED_GLIBC_VERSION: 2.28
+          EXPECTED_GLIBCXX_VERSION: 3.4.26
+
+      - name: Upload server artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build_server.outputs.ARCHIVE_PATH }}
+          path: ${{ steps.build_server.outputs.ARCHIVE_PATH }}
+
+      - name: Build server (web)
+        id: build_server_web
+        working-directory: repository
+        run: |
+          set -e
+          npm run gulp vscode-reh-web-linux-${{ matrix.VSCODE_ARCH }}-min-ci
+          mv ../vscode-reh-web-linux-${{ matrix.VSCODE_ARCH }} ../vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web
+          ARCHIVE_PATH=".build/linux/web/vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web.tar.gz"
+          mkdir -p $(dirname $ARCHIVE_PATH)
+          tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web
+          echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+
+      - name: Upload server (web) artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build_server_web.outputs.ARCHIVE_PATH }}
+          path: ${{ steps.build_server_web.outputs.ARCHIVE_PATH }}
+
+      - name: Prepare deb package
+        run: npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-prepare-deb"
+
+      - name: Build deb package
+        id: build_deb_package
+        run: |
+          set -e
+          npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-build-deb"
+          file_output=$(file $(ls .build/linux/deb/*/deb/*.deb))
+          if [[ "$file_output" != *"data compression xz"* ]]; then
+            echo "Error: unknown compression. $file_output"
+            exit 1
+          fi
+          echo "DEB_PATH=$(ls .build/linux/deb/*/deb/*.deb)" >> $GITHUB_OUTPUT
+
+      - name: Upload deb package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build_deb_package.outputs.DEB_PATH }}
+          path: ${{ steps.build_deb_package.outputs.DEB_PATH }}
