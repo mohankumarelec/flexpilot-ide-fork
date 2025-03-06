@@ -124,6 +124,7 @@ jobs:
           tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-${{ matrix.VSCODE_ARCH }}
           echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
           echo "UNARCHIVE_PATH=$UNARCHIVE_PATH" >> $GITHUB_OUTPUT
+          echo "ARCHIVE_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
 
       - name: Check GLIBC and GLIBCXX dependencies in server archive
         working-directory: repository
@@ -142,7 +143,7 @@ jobs:
       - name: Upload server artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.build_server.outputs.ARCHIVE_PATH }}
+          name: ${{ steps.build_server.outputs.ARCHIVE_NAME }}
           path: ${{ steps.build_server.outputs.ARCHIVE_PATH }}
 
       - name: Build server (web)
@@ -155,12 +156,46 @@ jobs:
           mkdir -p $(dirname $ARCHIVE_PATH)
           tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web
           echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+          echo "ARCHIVE_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
 
       - name: Upload server (web) artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.build_server_web.outputs.ARCHIVE_PATH }}
+          name: ${{ steps.build_server_web.outputs.ARCHIVE_NAME }}
           path: ${{ steps.build_server_web.outputs.ARCHIVE_PATH }}
+
+      # - script: |
+      #     set -e
+      #     npm run gulp vscode-linux-$(VSCODE_ARCH)-min
+      #     ARCHIVE_PATH=".build/linux/client/code-${{ parameters.VSCODE_QUALITY }}-$(VSCODE_ARCH)-$(date +%s).tar.gz"
+      #     mkdir -p $(dirname $ARCHIVE_PATH)
+      #     echo "##vso[task.setvariable variable=CLIENT_PATH]$ARCHIVE_PATH"
+      #   env:
+      #     GITHUB_TOKEN: "$(github-distro-mixin-password)"
+      #   displayName: Build client
+
+      # - ${{ if ne(parameters.VSCODE_CIBUILD, true) }}:
+      #   - task: DownloadPipelineArtifact@2
+      #     inputs:
+      #       artifact: $(ARTIFACT_PREFIX)vscode_cli_linux_$(VSCODE_ARCH)_cli
+      #       patterns: "**"
+      #       path: $(Build.ArtifactStagingDirectory)/cli
+      #     displayName: Download VS Code CLI
+
+      #   - script: |
+      #       set -e
+      #       tar -xzvf $(Build.ArtifactStagingDirectory)/cli/*.tar.gz -C $(Build.ArtifactStagingDirectory)/cli
+      #       CLI_APP_NAME=$(node -p "require(\"$(agent.builddirectory)/VSCode-linux-$(VSCODE_ARCH)/resources/app/product.json\").tunnelApplicationName")
+      #       APP_NAME=$(node -p "require(\"$(agent.builddirectory)/VSCode-linux-$(VSCODE_ARCH)/resources/app/product.json\").applicationName")
+      #       mv $(Build.ArtifactStagingDirectory)/cli/$APP_NAME $(agent.builddirectory)/VSCode-linux-$(VSCODE_ARCH)/bin/$CLI_APP_NAME
+      #     displayName: Mix in CLI
+
+      # - script: |
+      #     set -e
+      #     tar -czf $CLIENT_PATH -C .. VSCode-linux-$(VSCODE_ARCH)
+      #   env:
+      #     GITHUB_TOKEN: "$(github-distro-mixin-password)"
+      #   displayName: Archive client
 
       - name: Prepare deb package
         working-directory: repository
@@ -177,11 +212,12 @@ jobs:
             exit 1
           fi
           echo "DEB_PATH=$(pwd)/$(ls .build/linux/deb/*/deb/*.deb)" >> $GITHUB_OUTPUT
+          echo "DEB_NAME=$(basename $DEB_PATH)" >> $GITHUB_OUTPUT
 
       - name: Upload deb package
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.build_deb_package.outputs.DEB_PATH }}
+          name: ${{ steps.build_deb_package.outputs.DEB_NAME }}
           path: ${{ steps.build_deb_package.outputs.DEB_PATH }}
 
       - name: Prepare rpm package
@@ -207,11 +243,12 @@ jobs:
         run: |
           npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-build-rpm"
           echo "RPM_PATH=$(pwd)/$(ls .build/linux/rpm/*/*.rpm)" >> $GITHUB_OUTPUT
+          echo "RPM_NAME=$(basename $RPM_PATH)" >> $GITHUB_OUTPUT
 
       - name: Upload RPM package
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.build_rpm_package.outputs.RPM_PATH }}
+          name: ${{ steps.build_rpm_package.outputs.RPM_NAME }}
           path: ${{ steps.build_rpm_package.outputs.RPM_PATH }}
 
       - name: Prepare snap package
@@ -223,9 +260,10 @@ jobs:
           mkdir -p $(dirname $ARCHIVE_PATH)
           tar -czf $ARCHIVE_PATH -C .build/linux snap
           echo "SNAP_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+          echo "SNAP_NAME=$(basename $SNAP_PATH)" >> $GITHUB_OUTPUT
 
       - name: Upload snap package
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.prepare_snap_package.outputs.SNAP_PATH }}
+          name: ${{ steps.prepare_snap_package.outputs.SNAP_NAME }}
           path: ${{ steps.prepare_snap_package.outputs.SNAP_PATH }}
