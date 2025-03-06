@@ -126,21 +126,18 @@ jobs:
           echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
           echo "UNARCHIVE_PATH=$UNARCHIVE_PATH" >> $GITHUB_OUTPUT
 
-      - name: Check GLIBC and GLIBCXX dependencies in server archive (x64/arm64)
-        if: ${{ matrix.VSCODE_ARCH == 'x64' || matrix.VSCODE_ARCH == 'arm64' }}
-        run: ./build/azure-pipelines/linux/verify-glibc-requirements.sh
+      - name: Check GLIBC and GLIBCXX dependencies in server archive
+        run: |
+          if [[ "${{ matrix.VSCODE_ARCH }}" == "x64" || "${{ matrix.VSCODE_ARCH }}" == "arm64" ]]; then
+            export EXPECTED_GLIBCXX_VERSION=3.4.25
+            export EXPECTED_GLIBC_VERSION=2.28
+          else
+            export EXPECTED_GLIBCXX_VERSION=3.4.26
+            export EXPECTED_GLIBC_VERSION=2.28
+          fi
+          ./build/azure-pipelines/linux/verify-glibc-requirements.sh
         env:
           SEARCH_PATH: ${{ steps.build_server.outputs.UNARCHIVE_PATH }}
-          EXPECTED_GLIBC_VERSION: 2.28
-          EXPECTED_GLIBCXX_VERSION: 3.4.25
-
-      - name: Check GLIBC and GLIBCXX dependencies in server archive (other)
-        if: ${{ matrix.VSCODE_ARCH != 'x64' && matrix.VSCODE_ARCH != 'arm64' }}
-        run: ./build/azure-pipelines/linux/verify-glibc-requirements.sh
-        env:
-          SEARCH_PATH: ${{ steps.build_server.outputs.UNARCHIVE_PATH }}
-          EXPECTED_GLIBC_VERSION: 2.28
-          EXPECTED_GLIBCXX_VERSION: 3.4.26
 
       - name: Upload server artifact
         uses: actions/upload-artifact@v4
@@ -153,7 +150,7 @@ jobs:
         working-directory: repository
         run: |
           set -e
-          npm run gulp vscode-reh-web-linux-${{ matrix.VSCODE_ARCH }}-min-ci
+          npm run gulp vscode-reh-web-linux-${{ matrix.VSCODE_ARCH }}-min
           mv ../vscode-reh-web-linux-${{ matrix.VSCODE_ARCH }} ../vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web
           ARCHIVE_PATH=".build/linux/web/vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web.tar.gz"
           mkdir -p $(dirname $ARCHIVE_PATH)
