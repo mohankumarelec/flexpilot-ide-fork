@@ -200,7 +200,8 @@ jobs:
             echo "Error: unknown compression. $file_output"
             exit 1
           fi
-          echo "DEB_PATH=$(pwd)/$(ls .build/linux/deb/*/deb/*.deb)" >> $GITHUB_OUTPUT
+          export DEB_PATH="$(pwd)/$(ls .build/linux/deb/*/deb/*.deb)"
+          echo "DEB_PATH=$DEB_PATH" >> $GITHUB_OUTPUT
           echo "DEB_NAME=$(basename $DEB_PATH)" >> $GITHUB_OUTPUT
 
       - name: Upload deb package
@@ -231,7 +232,8 @@ jobs:
         working-directory: repository
         run: |
           npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-build-rpm"
-          echo "RPM_PATH=$(pwd)/$(ls .build/linux/rpm/*/*.rpm)" >> $GITHUB_OUTPUT
+          export RPM_PATH="$(pwd)/$(ls .build/linux/rpm/*/*.rpm)"
+          echo "RPM_PATH=$RPM_PATH" >> $GITHUB_OUTPUT
           echo "RPM_NAME=$(basename $RPM_PATH)" >> $GITHUB_OUTPUT
 
       - name: Upload RPM package
@@ -249,7 +251,7 @@ jobs:
           mkdir -p $(dirname $ARCHIVE_PATH)
           tar -czf $ARCHIVE_PATH -C .build/linux snap
           echo "SNAP_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
-          echo "SNAP_NAME=$(basename $SNAP_PATH)" >> $GITHUB_OUTPUT
+          echo "SNAP_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
 
       - name: Upload snap package
         uses: actions/upload-artifact@v4
