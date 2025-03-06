@@ -112,98 +112,98 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: 1
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - name: Build Desktop Client
-        id: build_desktop_client
-        working-directory: repository
-        run: |
-          npm run gulp vscode-linux-${{ matrix.VSCODE_ARCH }}-min
-          ARCHIVE_PATH="$(pwd)/.build/linux/client/code-${{ matrix.VSCODE_QUALITY }}-${{ matrix.VSCODE_ARCH }}.tar.gz"
-          mkdir -p $(dirname $ARCHIVE_PATH)
-          echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
-          echo "ARCHIVE_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
+      # - name: Build Desktop Client
+      #   id: build_desktop_client
+      #   working-directory: repository
+      #   run: |
+      #     npm run gulp vscode-linux-${{ matrix.VSCODE_ARCH }}-min
+      #     ARCHIVE_PATH="$(pwd)/.build/linux/client/code-${{ matrix.VSCODE_QUALITY }}-${{ matrix.VSCODE_ARCH }}.tar.gz"
+      #     mkdir -p $(dirname $ARCHIVE_PATH)
+      #     echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+      #     echo "ARCHIVE_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
 
-      - name: Archive client
-        working-directory: repository
-        run: tar -czf ${{ steps.build_desktop_client.outputs.ARCHIVE_PATH }} -C .. VSCode-linux-${{ matrix.VSCODE_ARCH }}
+      # - name: Archive client
+      #   working-directory: repository
+      #   run: tar -czf ${{ steps.build_desktop_client.outputs.ARCHIVE_PATH }} -C .. VSCode-linux-${{ matrix.VSCODE_ARCH }}
 
-      - name: Upload client artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.build_desktop_client.outputs.ARCHIVE_NAME }}
-          path: ${{ steps.build_desktop_client.outputs.ARCHIVE_PATH }}
+      # - name: Upload client artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ steps.build_desktop_client.outputs.ARCHIVE_NAME }}
+      #     path: ${{ steps.build_desktop_client.outputs.ARCHIVE_PATH }}
 
-      - name: Prepare deb package
-        working-directory: repository
-        run: npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-prepare-deb"
+      # - name: Prepare deb package
+      #   working-directory: repository
+      #   run: npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-prepare-deb"
 
-      - name: Build deb package
-        id: build_deb_package
-        working-directory: repository
-        run: |
-          npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-build-deb"
-          file_output=$(file $(ls .build/linux/deb/*/deb/*.deb))
-          if [[ "$file_output" != *"data compression xz"* ]]; then
-            echo "Error: unknown compression. $file_output"
-            exit 1
-          fi
-          export DEB_PATH="$(pwd)/$(ls .build/linux/deb/*/deb/*.deb)"
-          echo "DEB_PATH=$DEB_PATH" >> $GITHUB_OUTPUT
-          echo "DEB_NAME=$(basename $DEB_PATH)" >> $GITHUB_OUTPUT
+      # - name: Build deb package
+      #   id: build_deb_package
+      #   working-directory: repository
+      #   run: |
+      #     npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-build-deb"
+      #     file_output=$(file $(ls .build/linux/deb/*/deb/*.deb))
+      #     if [[ "$file_output" != *"data compression xz"* ]]; then
+      #       echo "Error: unknown compression. $file_output"
+      #       exit 1
+      #     fi
+      #     export DEB_PATH="$(pwd)/$(ls .build/linux/deb/*/deb/*.deb)"
+      #     echo "DEB_PATH=$DEB_PATH" >> $GITHUB_OUTPUT
+      #     echo "DEB_NAME=$(basename $DEB_PATH)" >> $GITHUB_OUTPUT
 
-      - name: Upload deb package
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.build_deb_package.outputs.DEB_NAME }}
-          path: ${{ steps.build_deb_package.outputs.DEB_PATH }}
+      # - name: Upload deb package
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ steps.build_deb_package.outputs.DEB_NAME }}
+      #     path: ${{ steps.build_deb_package.outputs.DEB_PATH }}
 
-      - name: Prepare rpm package
-        working-directory: repository
-        run: |
-          TRIPLE=""
-          if [ "$VSCODE_ARCH" == "x64" ]; then
-            TRIPLE="x86_64-linux-gnu"
-          elif [ "$VSCODE_ARCH" == "arm64" ]; then
-            TRIPLE="aarch64-linux-gnu"
-          elif [ "$VSCODE_ARCH" == "armhf" ]; then
-            TRIPLE="arm-rpi-linux-gnueabihf"
-          fi
-          export VSCODE_SYSROOT_DIR=$(pwd)/.build/sysroots
-          export STRIP="$VSCODE_SYSROOT_DIR/$TRIPLE/$TRIPLE/bin/strip"
-          npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-prepare-rpm"
-        env:
-          VSCODE_ARCH: ${{ matrix.VSCODE_ARCH }}
+      # - name: Prepare rpm package
+      #   working-directory: repository
+      #   run: |
+      #     TRIPLE=""
+      #     if [ "$VSCODE_ARCH" == "x64" ]; then
+      #       TRIPLE="x86_64-linux-gnu"
+      #     elif [ "$VSCODE_ARCH" == "arm64" ]; then
+      #       TRIPLE="aarch64-linux-gnu"
+      #     elif [ "$VSCODE_ARCH" == "armhf" ]; then
+      #       TRIPLE="arm-rpi-linux-gnueabihf"
+      #     fi
+      #     export VSCODE_SYSROOT_DIR=$(pwd)/.build/sysroots
+      #     export STRIP="$VSCODE_SYSROOT_DIR/$TRIPLE/$TRIPLE/bin/strip"
+      #     npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-prepare-rpm"
+      #   env:
+      #     VSCODE_ARCH: ${{ matrix.VSCODE_ARCH }}
 
-      - name: Build rpm package
-        id: build_rpm_package
-        working-directory: repository
-        run: |
-          npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-build-rpm"
-          export RPM_PATH="$(pwd)/$(ls .build/linux/rpm/*/*.rpm)"
-          echo "RPM_PATH=$RPM_PATH" >> $GITHUB_OUTPUT
-          echo "RPM_NAME=$(basename $RPM_PATH)" >> $GITHUB_OUTPUT
+      # - name: Build rpm package
+      #   id: build_rpm_package
+      #   working-directory: repository
+      #   run: |
+      #     npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-build-rpm"
+      #     export RPM_PATH="$(pwd)/$(ls .build/linux/rpm/*/*.rpm)"
+      #     echo "RPM_PATH=$RPM_PATH" >> $GITHUB_OUTPUT
+      #     echo "RPM_NAME=$(basename $RPM_PATH)" >> $GITHUB_OUTPUT
 
-      - name: Upload RPM package
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.build_rpm_package.outputs.RPM_NAME }}
-          path: ${{ steps.build_rpm_package.outputs.RPM_PATH }}
+      # - name: Upload RPM package
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ steps.build_rpm_package.outputs.RPM_NAME }}
+      #     path: ${{ steps.build_rpm_package.outputs.RPM_PATH }}
 
-      - name: Prepare snap package
-        id: prepare_snap_package
-        working-directory: repository
-        run: |
-          npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-prepare-snap"
-          ARCHIVE_PATH="$(pwd)/.build/linux/snap-tarball/snap-${{ matrix.VSCODE_ARCH }}.tar.gz"
-          mkdir -p $(dirname $ARCHIVE_PATH)
-          tar -czf $ARCHIVE_PATH -C .build/linux snap
-          echo "SNAP_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
-          echo "SNAP_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
+      # - name: Prepare snap package
+      #   id: prepare_snap_package
+      #   working-directory: repository
+      #   run: |
+      #     npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-prepare-snap"
+      #     ARCHIVE_PATH="$(pwd)/.build/linux/snap-tarball/snap-${{ matrix.VSCODE_ARCH }}.tar.gz"
+      #     mkdir -p $(dirname $ARCHIVE_PATH)
+      #     tar -czf $ARCHIVE_PATH -C .build/linux snap
+      #     echo "SNAP_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+      #     echo "SNAP_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
 
-      - name: Upload snap package
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.prepare_snap_package.outputs.SNAP_NAME }}
-          path: ${{ steps.prepare_snap_package.outputs.SNAP_PATH }}
+      # - name: Upload snap package
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ steps.prepare_snap_package.outputs.SNAP_NAME }}
+      #     path: ${{ steps.prepare_snap_package.outputs.SNAP_PATH }}
 
       - name: Build server
         id: build_server
