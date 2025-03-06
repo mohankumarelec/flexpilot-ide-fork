@@ -116,10 +116,9 @@ jobs:
         id: build_server
         working-directory: repository
         run: |
-          set -e
           npm run gulp vscode-reh-linux-${{ matrix.VSCODE_ARCH }}-min
           mv ../vscode-reh-linux-${{ matrix.VSCODE_ARCH }} ../vscode-server-linux-${{ matrix.VSCODE_ARCH }}
-          ARCHIVE_PATH=".build/linux/server/vscode-server-linux-${{ matrix.VSCODE_ARCH }}.tar.gz"
+          ARCHIVE_PATH="$(pwd)/.build/linux/server/vscode-server-linux-${{ matrix.VSCODE_ARCH }}.tar.gz"
           UNARCHIVE_PATH="$(pwd)/../vscode-server-linux-${{ matrix.VSCODE_ARCH }}"
           mkdir -p $(dirname $ARCHIVE_PATH)
           tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-${{ matrix.VSCODE_ARCH }}
@@ -127,6 +126,7 @@ jobs:
           echo "UNARCHIVE_PATH=$UNARCHIVE_PATH" >> $GITHUB_OUTPUT
 
       - name: Check GLIBC and GLIBCXX dependencies in server archive
+        working-directory: repository
         run: |
           if [[ "${{ matrix.VSCODE_ARCH }}" == "x64" || "${{ matrix.VSCODE_ARCH }}" == "arm64" ]]; then
             export EXPECTED_GLIBCXX_VERSION=3.4.25
@@ -149,10 +149,9 @@ jobs:
         id: build_server_web
         working-directory: repository
         run: |
-          set -e
           npm run gulp vscode-reh-web-linux-${{ matrix.VSCODE_ARCH }}-min
           mv ../vscode-reh-web-linux-${{ matrix.VSCODE_ARCH }} ../vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web
-          ARCHIVE_PATH=".build/linux/web/vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web.tar.gz"
+          ARCHIVE_PATH="$(pwd)/.build/linux/web/vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web.tar.gz"
           mkdir -p $(dirname $ARCHIVE_PATH)
           tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web
           echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
@@ -164,22 +163,69 @@ jobs:
           path: ${{ steps.build_server_web.outputs.ARCHIVE_PATH }}
 
       - name: Prepare deb package
+        working-directory: repository
         run: npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-prepare-deb"
 
       - name: Build deb package
         id: build_deb_package
+        working-directory: repository
         run: |
-          set -e
           npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-build-deb"
           file_output=$(file $(ls .build/linux/deb/*/deb/*.deb))
           if [[ "$file_output" != *"data compression xz"* ]]; then
             echo "Error: unknown compression. $file_output"
             exit 1
           fi
-          echo "DEB_PATH=$(ls .build/linux/deb/*/deb/*.deb)" >> $GITHUB_OUTPUT
+          echo "DEB_PATH=$(pwd)/$(ls .build/linux/deb/*/deb/*.deb)" >> $GITHUB_OUTPUT
 
       - name: Upload deb package
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.build_deb_package.outputs.DEB_PATH }}
           path: ${{ steps.build_deb_package.outputs.DEB_PATH }}
+
+      - name: Prepare rpm package
+        working-directory: repository
+        run: |
+          TRIPLE=""
+          if [ "$VSCODE_ARCH" == "x64" ]; then
+            TRIPLE="x86_64-linux-gnu"
+          elif [ "$VSCODE_ARCH" == "arm64" ]; then
+            TRIPLE="aarch64-linux-gnu"
+          elif [ "$VSCODE_ARCH" == "armhf" ]; then
+            TRIPLE="arm-rpi-linux-gnueabihf"
+          fi
+          export VSCODE_SYSROOT_DIR=$(pwd)/.build/sysroots
+          export STRIP="$VSCODE_SYSROOT_DIR/$TRIPLE/$TRIPLE/bin/strip"
+          npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-prepare-rpm"
+        env:
+          VSCODE_ARCH: ${{ matrix.VSCODE_ARCH }}
+
+      - name: Build rpm package
+        id: build_rpm_package
+        working-directory: repository
+        run: |
+          npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-build-rpm"
+          echo "RPM_PATH=$(pwd)/$(ls .build/linux/rpm/*/*.rpm)" >> $GITHUB_OUTPUT
+
+      - name: Upload RPM package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build_rpm_package.outputs.RPM_PATH }}
+          path: ${{ steps.build_rpm_package.outputs.RPM_PATH }}
+
+      - name: Prepare snap package
+        id: prepare_snap_package
+        working-directory: repository
+        run: |
+          npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-prepare-snap"
+          ARCHIVE_PATH="$(pwd)/.build/linux/snap-tarball/snap-${{ matrix.VSCODE_ARCH }}.tar.gz"
+          mkdir -p $(dirname $ARCHIVE_PATH)
+          tar -czf $ARCHIVE_PATH -C .build/linux snap
+          echo "SNAP_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+
+      - name: Upload snap package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.prepare_snap_package.outputs.SNAP_PATH }}
+          path: ${{ steps.prepare_snap_package.outputs.SNAP_PATH }}
