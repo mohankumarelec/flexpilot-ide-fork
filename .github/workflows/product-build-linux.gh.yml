@@ -164,39 +164,6 @@ jobs:
           name: ${{ steps.build_server_web.outputs.ARCHIVE_NAME }}
           path: ${{ steps.build_server_web.outputs.ARCHIVE_PATH }}
 
-      # - script: |
-      #     set -e
-      #     npm run gulp vscode-linux-$(VSCODE_ARCH)-min
-      #     ARCHIVE_PATH=".build/linux/client/code-${{ parameters.VSCODE_QUALITY }}-$(VSCODE_ARCH)-$(date +%s).tar.gz"
-      #     mkdir -p $(dirname $ARCHIVE_PATH)
-      #     echo "##vso[task.setvariable variable=CLIENT_PATH]$ARCHIVE_PATH"
-      #   env:
-      #     GITHUB_TOKEN: "$(github-distro-mixin-password)"
-      #   displayName: Build client
-
-      # - ${{ if ne(parameters.VSCODE_CIBUILD, true) }}:
-      #   - task: DownloadPipelineArtifact@2
-      #     inputs:
-      #       artifact: $(ARTIFACT_PREFIX)vscode_cli_linux_$(VSCODE_ARCH)_cli
-      #       patterns: "**"
-      #       path: $(Build.ArtifactStagingDirectory)/cli
-      #     displayName: Download VS Code CLI
-
-      #   - script: |
-      #       set -e
-      #       tar -xzvf $(Build.ArtifactStagingDirectory)/cli/*.tar.gz -C $(Build.ArtifactStagingDirectory)/cli
-      #       CLI_APP_NAME=$(node -p "require(\"$(agent.builddirectory)/VSCode-linux-$(VSCODE_ARCH)/resources/app/product.json\").tunnelApplicationName")
-      #       APP_NAME=$(node -p "require(\"$(agent.builddirectory)/VSCode-linux-$(VSCODE_ARCH)/resources/app/product.json\").applicationName")
-      #       mv $(Build.ArtifactStagingDirectory)/cli/$APP_NAME $(agent.builddirectory)/VSCode-linux-$(VSCODE_ARCH)/bin/$CLI_APP_NAME
-      #     displayName: Mix in CLI
-
-      # - script: |
-      #     set -e
-      #     tar -czf $CLIENT_PATH -C .. VSCode-linux-$(VSCODE_ARCH)
-      #   env:
-      #     GITHUB_TOKEN: "$(github-distro-mixin-password)"
-      #   displayName: Archive client
-
       - name: Prepare deb package
         working-directory: repository
         run: npm run gulp "vscode-linux-${{ matrix.VSCODE_ARCH }}-prepare-deb"
@@ -267,3 +234,23 @@ jobs:
         with:
           name: ${{ steps.prepare_snap_package.outputs.SNAP_NAME }}
           path: ${{ steps.prepare_snap_package.outputs.SNAP_PATH }}
+
+      - name: Build Desktop Client
+        id: build_desktop_client
+        working-directory: repository
+        run: |
+          npm run gulp vscode-linux-${{ matrix.VSCODE_ARCH }}-min
+          ARCHIVE_PATH="$(pwd)/.build/linux/client/code-${{ matrix.VSCODE_QUALITY }}-${{ matrix.VSCODE_ARCH }}.tar.gz"
+          mkdir -p $(dirname $ARCHIVE_PATH)
+          echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+          echo "ARCHIVE_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
+
+      - name: Archive client
+        working-directory: repository
+        run: tar -czf ${{ steps.build_desktop_client.outputs.ARCHIVE_PATH }} -C .. VSCode-linux-${{ matrix.VSCODE_ARCH }}
+
+      - name: Upload client artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build_desktop_client.outputs.ARCHIVE_NAME }}
+          path: ${{ steps.build_desktop_client.outputs.ARCHIVE_PATH }}
