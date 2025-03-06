@@ -112,79 +112,25 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: 1
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      # - name: Build Desktop Client
-      #   id: build_desktop_client
-      #   working-directory: repository
-      #   run: |
-      #     npm run gulp vscode-linux-${{ matrix.VSCODE_ARCH }}-min
-      #     ARCHIVE_PATH="$(pwd)/.build/linux/client/code-${{ matrix.VSCODE_QUALITY }}-${{ matrix.VSCODE_ARCH }}.tar.gz"
-      #     mkdir -p $(dirname $ARCHIVE_PATH)
-      #     echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
-      #     echo "ARCHIVE_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
-
-      # - name: Archive client
-      #   working-directory: repository
-      #   run: tar -czf ${{ steps.build_desktop_client.outputs.ARCHIVE_PATH }} -C .. VSCode-linux-${{ matrix.VSCODE_ARCH }}
-
-      # - name: Upload client artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: ${{ steps.build_desktop_client.outputs.ARCHIVE_NAME }}
-      #     path: ${{ steps.build_desktop_client.outputs.ARCHIVE_PATH }}
-
-      - name: Build server
-        id: build_server
+      - name: Build Desktop Client
+        id: build_desktop_client
         working-directory: repository
         run: |
-          npm run gulp vscode-reh-linux-${{ matrix.VSCODE_ARCH }}-min
-          mv ../vscode-reh-linux-${{ matrix.VSCODE_ARCH }} ../vscode-server-linux-${{ matrix.VSCODE_ARCH }}
-          ARCHIVE_PATH="$(pwd)/.build/linux/server/vscode-server-linux-${{ matrix.VSCODE_ARCH }}.tar.gz"
-          UNARCHIVE_PATH="$(pwd)/../vscode-server-linux-${{ matrix.VSCODE_ARCH }}"
+          npm run gulp vscode-linux-${{ matrix.VSCODE_ARCH }}-min
+          ARCHIVE_PATH="$(pwd)/.build/linux/client/code-${{ matrix.VSCODE_QUALITY }}-${{ matrix.VSCODE_ARCH }}.tar.gz"
           mkdir -p $(dirname $ARCHIVE_PATH)
-          tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-${{ matrix.VSCODE_ARCH }}
-          echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
-          echo "UNARCHIVE_PATH=$UNARCHIVE_PATH" >> $GITHUB_OUTPUT
-          echo "ARCHIVE_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
-
-      - name: Check GLIBC and GLIBCXX dependencies in server archive
-        working-directory: repository
-        run: |
-          if [[ "${{ matrix.VSCODE_ARCH }}" == "x64" || "${{ matrix.VSCODE_ARCH }}" == "arm64" ]]; then
-            export EXPECTED_GLIBCXX_VERSION=3.4.25
-            export EXPECTED_GLIBC_VERSION=2.28
-          else
-            export EXPECTED_GLIBCXX_VERSION=3.4.26
-            export EXPECTED_GLIBC_VERSION=2.28
-          fi
-          ./build/azure-pipelines/linux/verify-glibc-requirements.sh
-        env:
-          npm_config_arch: ${{ matrix.NPM_ARCH }}
-          VSCODE_ARCH: ${{ matrix.VSCODE_ARCH }}
-          SEARCH_PATH: ${{ steps.build_server.outputs.UNARCHIVE_PATH }}
-
-      - name: Upload server artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.build_server.outputs.ARCHIVE_NAME }}
-          path: ${{ steps.build_server.outputs.ARCHIVE_PATH }}
-
-      - name: Build server (web)
-        id: build_server_web
-        working-directory: repository
-        run: |
-          npm run gulp vscode-reh-web-linux-${{ matrix.VSCODE_ARCH }}-min
-          mv ../vscode-reh-web-linux-${{ matrix.VSCODE_ARCH }} ../vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web
-          ARCHIVE_PATH="$(pwd)/.build/linux/web/vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web.tar.gz"
-          mkdir -p $(dirname $ARCHIVE_PATH)
-          tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web
           echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
           echo "ARCHIVE_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
 
-      - name: Upload server (web) artifact
+      - name: Archive client
+        working-directory: repository
+        run: tar -czf ${{ steps.build_desktop_client.outputs.ARCHIVE_PATH }} -C .. VSCode-linux-${{ matrix.VSCODE_ARCH }}
+
+      - name: Upload client artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.build_server_web.outputs.ARCHIVE_NAME }}
-          path: ${{ steps.build_server_web.outputs.ARCHIVE_PATH }}
+          name: ${{ steps.build_desktop_client.outputs.ARCHIVE_NAME }}
+          path: ${{ steps.build_desktop_client.outputs.ARCHIVE_PATH }}
 
       - name: Prepare deb package
         working-directory: repository
@@ -258,3 +204,57 @@ jobs:
         with:
           name: ${{ steps.prepare_snap_package.outputs.SNAP_NAME }}
           path: ${{ steps.prepare_snap_package.outputs.SNAP_PATH }}
+
+      - name: Build server
+        id: build_server
+        working-directory: repository
+        run: |
+          npm run gulp vscode-reh-linux-${{ matrix.VSCODE_ARCH }}-min
+          mv ../vscode-reh-linux-${{ matrix.VSCODE_ARCH }} ../vscode-server-linux-${{ matrix.VSCODE_ARCH }}
+          ARCHIVE_PATH="$(pwd)/.build/linux/server/vscode-server-linux-${{ matrix.VSCODE_ARCH }}.tar.gz"
+          UNARCHIVE_PATH="$(pwd)/../vscode-server-linux-${{ matrix.VSCODE_ARCH }}"
+          mkdir -p $(dirname $ARCHIVE_PATH)
+          tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-${{ matrix.VSCODE_ARCH }}
+          echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+          echo "UNARCHIVE_PATH=$UNARCHIVE_PATH" >> $GITHUB_OUTPUT
+          echo "ARCHIVE_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
+
+      - name: Check GLIBC and GLIBCXX dependencies in server archive
+        working-directory: repository
+        run: |
+          if [[ "${{ matrix.VSCODE_ARCH }}" == "x64" || "${{ matrix.VSCODE_ARCH }}" == "arm64" ]]; then
+            export EXPECTED_GLIBCXX_VERSION=3.4.25
+            export EXPECTED_GLIBC_VERSION=2.28
+          else
+            export EXPECTED_GLIBCXX_VERSION=3.4.26
+            export EXPECTED_GLIBC_VERSION=2.28
+          fi
+          ./build/azure-pipelines/linux/verify-glibc-requirements.sh
+        env:
+          npm_config_arch: ${{ matrix.NPM_ARCH }}
+          VSCODE_ARCH: ${{ matrix.VSCODE_ARCH }}
+          SEARCH_PATH: ${{ steps.build_server.outputs.UNARCHIVE_PATH }}
+
+      - name: Upload server artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build_server.outputs.ARCHIVE_NAME }}
+          path: ${{ steps.build_server.outputs.ARCHIVE_PATH }}
+
+      - name: Build server (web)
+        id: build_server_web
+        working-directory: repository
+        run: |
+          npm run gulp vscode-reh-web-linux-${{ matrix.VSCODE_ARCH }}-min
+          mv ../vscode-reh-web-linux-${{ matrix.VSCODE_ARCH }} ../vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web
+          ARCHIVE_PATH="$(pwd)/.build/linux/web/vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web.tar.gz"
+          mkdir -p $(dirname $ARCHIVE_PATH)
+          tar --owner=0 --group=0 -czf $ARCHIVE_PATH -C .. vscode-server-linux-${{ matrix.VSCODE_ARCH }}-web
+          echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+          echo "ARCHIVE_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
+
+      - name: Upload server (web) artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build_server_web.outputs.ARCHIVE_NAME }}
+          path: ${{ steps.build_server_web.outputs.ARCHIVE_PATH }}
