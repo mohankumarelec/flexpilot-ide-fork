@@ -112,25 +112,25 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: 1
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - name: Build Desktop Client
-        id: build_desktop_client
-        working-directory: repository
-        run: |
-          npm run gulp vscode-linux-${{ matrix.VSCODE_ARCH }}-min
-          ARCHIVE_PATH="$(pwd)/.build/linux/client/code-${{ matrix.VSCODE_QUALITY }}-${{ matrix.VSCODE_ARCH }}.tar.gz"
-          mkdir -p $(dirname $ARCHIVE_PATH)
-          echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
-          echo "ARCHIVE_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
+      # - name: Build Desktop Client
+      #   id: build_desktop_client
+      #   working-directory: repository
+      #   run: |
+      #     npm run gulp vscode-linux-${{ matrix.VSCODE_ARCH }}-min
+      #     ARCHIVE_PATH="$(pwd)/.build/linux/client/code-${{ matrix.VSCODE_QUALITY }}-${{ matrix.VSCODE_ARCH }}.tar.gz"
+      #     mkdir -p $(dirname $ARCHIVE_PATH)
+      #     echo "ARCHIVE_PATH=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+      #     echo "ARCHIVE_NAME=$(basename $ARCHIVE_PATH)" >> $GITHUB_OUTPUT
 
-      - name: Archive client
-        working-directory: repository
-        run: tar -czf ${{ steps.build_desktop_client.outputs.ARCHIVE_PATH }} -C .. VSCode-linux-${{ matrix.VSCODE_ARCH }}
+      # - name: Archive client
+      #   working-directory: repository
+      #   run: tar -czf ${{ steps.build_desktop_client.outputs.ARCHIVE_PATH }} -C .. VSCode-linux-${{ matrix.VSCODE_ARCH }}
 
-      - name: Upload client artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.build_desktop_client.outputs.ARCHIVE_NAME }}
-          path: ${{ steps.build_desktop_client.outputs.ARCHIVE_PATH }}
+      # - name: Upload client artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ steps.build_desktop_client.outputs.ARCHIVE_NAME }}
+      #     path: ${{ steps.build_desktop_client.outputs.ARCHIVE_PATH }}
 
       - name: Build server
         id: build_server
@@ -158,6 +158,8 @@ jobs:
           fi
           ./build/azure-pipelines/linux/verify-glibc-requirements.sh
         env:
+          npm_config_arch: ${{ matrix.NPM_ARCH }}
+          VSCODE_ARCH: ${{ matrix.VSCODE_ARCH }}
           SEARCH_PATH: ${{ steps.build_server.outputs.UNARCHIVE_PATH }}
 
       - name: Upload server artifact
